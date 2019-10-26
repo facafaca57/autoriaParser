@@ -2,10 +2,14 @@ import requests
 import csv
 import sqlite3
 from bs4 import BeautifulSoup
+from datetime import datetime
 # from selenium import webdriver
 # from selenium.webdriver import ActionChains
 
-print ("----------Start----------")
+print ("----------Start----------\n%s" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+
+log = open("log.txt","a")
+log.write("----------Start----------\n%s\n" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
 conn = sqlite3.connect("cars.db") 
 cursor = conn.cursor()
@@ -45,10 +49,11 @@ def func(info):
         pageNumber += 1
         getUrl(pageNumber)
         if pageNumber == page:
-            cursor.close()
-            conn.close()
             exit()
 
+    cursor.close()
+    conn.close()
+    log.close()
     print ("----------Finish----------")
 
 def getContent(url):
@@ -61,12 +66,17 @@ def getContent(url):
     
     if(soup.select_one("#autoDeletedTopBlock") != None):
         return
-    announcementUrl = url
-    authorName = soup.select_one("#userInfoBlock > div.seller_info.mb-15 > div > h4").text
-    authorCity = soup.select_one("#userInfoBlock > ul > li:nth-child(1) > div").text
-    authorPhone = soup.select_one("#phonesBlock > div:nth-child(1) > span")
-    authorType = soup.select_one("#userInfoBlock > div.seller_info.mb-15 > div > div.seller_info_title.grey").text  # authorPhone['data-phone-number']
-
+    try:
+        announcementUrl = url
+        authorName = soup.select_one("#userInfoBlock > div.seller_info.mb-15 > div > h4").text
+        authorCity = soup.select_one("#userInfoBlock > ul > li:nth-child(1) > div").text
+        authorPhone = soup.select_one("#phonesBlock > div:nth-child(1) > span")
+        authorType = soup.select_one("#userInfoBlock > div.seller_info.mb-15 > div > div.seller_info_title.grey").text  # authorPhone['data-phone-number']
+    except Exception as inst:
+        print(inst)
+        log.write("%s\n%s\n" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inst))
+        return
+    
     # driver = webdriver.Firefox(executable_path = 'geckodriver.exe')
     # driver.get(url)
     # try:
@@ -93,6 +103,7 @@ def getContent(url):
                 saveDB(announcementUrl, authorName, authorCity, authorPhone['data-phone-number'], authorType)
     except Exception as inst:
         print(inst)
+        log.write("%s\n%s\n" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inst))
 
 def saveDB(url, name, city, phone, isCompany):
     cursor.execute("""INSERT INTO annonce (url, name, city, phone, isCompany) 
